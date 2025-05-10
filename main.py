@@ -22,23 +22,23 @@ async def load_and_run_plugins():
 async def main():
     await load_and_run_plugins()
     while True:
-        await asyncio.sleep(1)  
+        await asyncio.sleep(1)  # This loop will keep the program running
 
 if __name__ == "__main__":
     try:
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        raise RuntimeError
-except RuntimeError:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    print("Starting clients ...")
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            raise RuntimeError("Event loop is closed")
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        print("Starting clients ...")
     try:
         loop.run_until_complete(main())
     except KeyboardInterrupt:
         print("Shutting down...")
     except Exception as e:
-        print(e)
+        print(f"Error: {e}")
         sys.exit(1)
     finally:
         try:
