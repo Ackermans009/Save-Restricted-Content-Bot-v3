@@ -34,6 +34,7 @@ from concurrent.futures import ThreadPoolExecutor
 import aiohttp 
 import logging
 import aiofiles
+from config import YT_COOKIES, INSTA_COOKIES
 from mutagen.id3 import ID3, TIT2, TPE1, COMM, APIC
 from mutagen.mp3 import MP3
  
@@ -79,7 +80,7 @@ def get_random_string(length=7):
 async def process_audio(client, event, url, cookies_env_var=None):
     cookies = None
     if cookies_env_var:
-        cookies = os.getenv(cookies_env_var)
+        cookies = cookies_env_var
  
     temp_cookie_path = None
     if cookies:
@@ -317,7 +318,7 @@ async def process_video(client, event, url, cookies_env_var, check_duration_and_
      
     cookies = None
     if cookies_env_var:
-        cookies = os.getenv(cookies_env_var)
+        cookies = cookies_env_var
  
      
     random_filename = get_random_string() + ".mp4"

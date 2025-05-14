@@ -230,7 +230,13 @@ async def process_msg(c, u, m, d, lt, uid, i):
                 return 'Failed.'
             
             await c.edit_message_text(d, p.id, 'Renaming...')
-            f = await rename_file(f, d, p)
+            if (
+                (m.video and m.video.file_name) or
+                (m.audio and m.audio.file_name) or
+                (m.document and m.document.file_name)
+            ):
+                f = await rename_file(f, d, p)
+            
             fsize = os.path.getsize(f) / (1024 * 1024 * 1024)
             th = thumbnail(d)
             

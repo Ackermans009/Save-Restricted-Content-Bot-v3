@@ -229,35 +229,41 @@ def generate_random_name(length=7):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
 
+
 async def rename_file(file, sender, edit):
-    delete_words = await get_user_data_key(sender, 'delete_words', [])
-    custom_rename_tag = await get_user_data_key(sender, 'rename_tag', '')
-    replacements = await get_user_data_key(sender, 'replacement_words', {})
-    
-    last_dot_index = str(file).rfind('.')
-    if last_dot_index != -1 and last_dot_index != 0:
-        ggn_ext = str(file)[last_dot_index + 1:]
-        if ggn_ext.isalpha() and len(ggn_ext) <= 9:
-            if ggn_ext.lower() in VIDEO_EXTENSIONS:
-                original_file_name = str(file)[:last_dot_index]
-                file_extension = 'mp4'
+    try:
+        delete_words = await get_user_data_key(sender, 'delete_words', [])
+        custom_rename_tag = await get_user_data_key(sender, 'rename_tag', '')
+        replacements = await get_user_data_key(sender, 'replacement_words', {})
+        
+        last_dot_index = str(file).rfind('.')
+        if last_dot_index != -1 and last_dot_index != 0:
+            ggn_ext = str(file)[last_dot_index + 1:]
+            if ggn_ext.isalpha() and len(ggn_ext) <= 9:
+                if ggn_ext.lower() in VIDEO_EXTENSIONS:
+                    original_file_name = str(file)[:last_dot_index]
+                    file_extension = 'mp4'
+                else:
+                    original_file_name = str(file)[:last_dot_index]
+                    file_extension = ggn_ext
             else:
                 original_file_name = str(file)[:last_dot_index]
-                file_extension = ggn_ext
+                file_extension = 'mp4'
         else:
-            original_file_name = str(file)[:last_dot_index]
+            original_file_name = str(file)
             file_extension = 'mp4'
-    else:
-        original_file_name = str(file)
-        file_extension = 'mp4'
-    
-    for word in delete_words:
-        original_file_name = original_file_name.replace(word, '')
-    
-    for word, replace_word in replacements.items():
-        original_file_name = original_file_name.replace(word, replace_word)
-    
-    new_file_name = f'{original_file_name} {custom_rename_tag}.{file_extension}'
-    await asyncio.to_thread(os.rename, file, new_file_name)
-    
-    return new_file_name
+        
+        for word in delete_words:
+            original_file_name = original_file_name.replace(word, '')
+        
+        for word, replace_word in replacements.items():
+            original_file_name = original_file_name.replace(word, replace_word)
+        
+        new_file_name = f'{original_file_name} {custom_rename_tag}.{file_extension}'
+        
+        os.rename(file, new_file_name)
+        return new_file_name
+    except Exception as e:
+        print(f"Rename error: {e}")
+        return file
+        
