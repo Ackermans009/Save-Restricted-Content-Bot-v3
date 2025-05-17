@@ -1,7 +1,3 @@
-# Copyright (c) 2025 devgagan : https://github.com/devgaganin.
-# Licensed under the GNU General Public License v3.0.
-# See LICENSE file in the repository root for full license text.
-
 import asyncio
 import importlib
 import os
@@ -11,8 +7,10 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from shared_client import start_client
 
 # ------------------------------
-# ✅ Step 1: Add a Health Check Server
+# ✅ Step 1: Health Check Server
 # ------------------------------
+HEALTH_CHECK_PORT = 8080  # Ensure Koyeb health check matches this port
+
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
@@ -24,11 +22,10 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 def run_health_server():
-    server = HTTPServer(("0.0.0.0", 8000), HealthCheckHandler)
-    print("✅ Health server running on port 8000")
+    server = HTTPServer(("0.0.0.0", HEALTH_CHECK_PORT), HealthCheckHandler)
+    print(f"✅ Health server running on port {HEALTH_CHECK_PORT}")
     server.serve_forever()
 
-# Start the health check server in a separate thread
 threading.Thread(target=run_health_server, daemon=True).start()
 
 # ------------------------------
@@ -54,15 +51,10 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            raise RuntimeError("Event loop is closed")
-    except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         print("🔄 Starting clients ...")
 
-    try:
         loop.run_until_complete(main())
     except KeyboardInterrupt:
         print("🛑 Shutting down...")
