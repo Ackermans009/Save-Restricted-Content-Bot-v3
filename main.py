@@ -1,3 +1,7 @@
+# Copyright (c) 2025 devgagan : https://github.com/devgaganin.
+# Licensed under the GNU General Public License v3.0.
+# See LICENSE file in the repository root for full license text.
+
 import asyncio
 import importlib
 import os
@@ -7,11 +11,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from shared_client import start_client
 
 # ------------------------------
-# Step 1: Add a Health Check Server
+# ✅ Step 1: Add a Health Check Server
 # ------------------------------
-# Use an environment variable for the port (default is 8080)
-HEALTH_CHECK_PORT = int(os.getenv("HEALTH_CHECK_PORT", "8080"))
-
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
@@ -23,67 +24,45 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 def run_health_server():
-    try:
-        server = HTTPServer(("0.0.0.0", HEALTH_CHECK_PORT), HealthCheckHandler)
-        print(f"✅ Health server running on port {HEALTH_CHECK_PORT}")
-        server.serve_forever()
-    except OSError as e:
-        # If the port is already in use, log the error
-        print(f"❌ Could not start health server on port {HEALTH_CHECK_PORT}: {e}")
+    server = HTTPServer(("0.0.0.0", 8080), HealthCheckHandler)
+    print("✅ Health server running on port 8080")
+    server.serve_forever()
 
-# Start the health check server in a separate daemon thread.
-health_thread = threading.Thread(target=run_health_server, daemon=True)
-health_thread.start()
+# Start the health check server in a separate thread
+threading.Thread(target=run_health_server, daemon=True).start()
 
 # ------------------------------
-# Step 2: Load and Run Plugins
+# ✅ Step 2: Load and Run Plugins
 # ------------------------------
 async def load_and_run_plugins():
+    await start_client()
     plugin_dir = "plugins"
-    if not os.path.isdir(plugin_dir):
-        print("❌ Plugins directory not found")
-        return
-
-    plugins = [f[:-3] for f in os.listdir(plugin_dir)
-               if f.endswith(".py") and f != "__init__.py"]
-
-    if not plugins:
-        print("⚠️ No plugins found in the plugins directory.")
+    plugins = [f[:-3] for f in os.listdir(plugin_dir) if f.endswith(".py") and f != "__init__.py"]
 
     for plugin in plugins:
-        try:
-            module = importlib.import_module(f"plugins.{plugin}")
-        except Exception as e:
-            print(f"❌ Failed to import plugin '{plugin}': {e}")
-            continue
-
-        func_name = f"run_{plugin}_plugin"
-        if hasattr(module, func_name):
+        module = importlib.import_module(f"plugins.{plugin}")
+        if hasattr(module, f"run_{plugin}_plugin"):
             print(f"🚀 Running {plugin} plugin...")
-            try:
-                await getattr(module, func_name)()
-            except Exception as e:
-                print(f"❌ Error running plugin '{plugin}': {e}")
-        else:
-            print(f"⚠️ Function '{func_name}' not found in plugin '{plugin}'. Skipping...")
+            await getattr(module, f"run_{plugin}_plugin")()
 
 # ------------------------------
-# Step 3: Run the Bot Client and Plugins Concurrently
+# ✅ Step 3: Keep Bot Running
 # ------------------------------
 async def main():
-    print("🔄 Starting bot client and plugins concurrently...")
-    # Run start_client and load_and_run_plugins concurrently.
-    await asyncio.gather(
-        start_client(),
-        load_and_run_plugins(),
-        asyncio.Event().wait()  # Keeps the process running indefinitely.
-    )
+    await load_and_run_plugins()
+    await asyncio.Event().wait()  # Keeps the bot alive indefinitely
 
 if __name__ == "__main__":
     try:
-        # Create and set a new event loop explicitly.
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            raise RuntimeError("Event loop is closed")
+    except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        print("🔄 Starting clients ...")
+
+    try:
         loop.run_until_complete(main())
     except KeyboardInterrupt:
         print("🛑 Shutting down...")
@@ -91,4 +70,7 @@ if __name__ == "__main__":
         print(f"❌ Error: {e}")
         sys.exit(1)
     finally:
-        loop.close()
+        try:
+            loop.close()
+        except Exception:
+            pass
